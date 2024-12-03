@@ -1,3 +1,5 @@
+-- Made by Hugo Krul (8681929) and Tijmen Vis (7155409)
+
 module Main where
 
 import Algebra
