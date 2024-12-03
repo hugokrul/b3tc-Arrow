@@ -16,19 +16,23 @@ batch = undefined
 -- This function is just here to play around with and test your lexer/parser.
 -- When implementing exercise 11, delete this comment and this function,
 -- and write a new main function.
-main :: IO ()
-main = do
-  chars <- readFile "examples/Add.arrow"
-  putStrLn "Input program:"
-  putStrLn ""
-  putStrLn chars
-  putStrLn ""
-  let tokens = alexScanTokens chars
-  putStrLn "Tokens:"
-  putStrLn ""
-  print tokens
-  let arr = parser tokens
-  putStrLn "Parsed program:"
-  putStrLn ""
-  print arr
+-- main :: IO ()
+-- main = do
+--   chars <- readFile "examples/Add.arrow"
+--   putStrLn "Input program:"
+--   putStrLn ""
+--   putStrLn chars
+--   putStrLn ""
+--   let tokens = alexScanTokens chars
+--   putStrLn "Tokens:"
+--   putStrLn ""
+--   print tokens
+--   let arr = parser tokens
+--   putStrLn "Parsed program:"
+--   putStrLn ""
+--   print arr
 
+main :: IO()
+main = do
+  content <- readFile "C:\\Users\\hugok\\Documents\\code\\b3tc\\b3tc-Arrow\\2-Arrow\\examples\\Add.arrow"
+  print $ alexScanTokens content
