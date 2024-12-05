@@ -2,6 +2,8 @@
 module Lexer where
 
 import Model
+import Debug.Trace
+import Data.List.Split
 }
 
 %wrapper "basic"
@@ -12,6 +14,10 @@ $alpha      = [a-zA-Z]
 $plus       = \+
 
 @variable = ($alpha|$digit|\+|\-)+
+@case = (case\ ([a-zA-Z]|[0-9]|\+|\-)+\ of)+
+@turn = (turn\ ([a-zA-Z]|[0-9]|\+|\-)+)+
+@pat = (Empty|Lambda|Debris|Asteroid|Boundary|\_)+
+@cmd = (go|take|mark|nothing|@turn|@case|@variable)+
 
 tokens :-
   $white+   ;
@@ -19,25 +25,8 @@ tokens :-
   "->"              { const TArrow }
   "."               { const TDot }
   ","               { const TComma }
-  "go"              { const TGo }
-  "take"            { const TTake }
-  "mark"            { const TMark }
-  "nothing"         { const TNothing }
-  "case"            { const TCase }
-  "of"              { const TOf }
   "end"             { const TEnd }
-  "turn left"       { const (TTurn (Turn Model.Left)) }
-  "turn right"      { const (TTurn (Turn Model.Right)) }
-  "turn front"      { const (TTurn (Turn Model.Front)) }
-  "left"            { const (TDir Model.Left)}
-  "right"           { const (TDir Model.Right)}
-  "front"           { const (TDir Model.Front)}
   ";"               { const TSemiColon }
-  "Empty"           { const TEmpty }
-  "Lambda"          { const TLambda }
-  "Debris"          { const TDebris }
-  "Asteroid"        { const TAsteroid }
-  "Boundary"        { const TBoundary }
-  "_"               { const TUnderscore }
-  @variable       { \input -> (TVariable input) }
+  @cmd              { \input -> TCmd $ parseCmd input}
+  @pat              { \input -> TPat (parsePat input)}
   _                 ;

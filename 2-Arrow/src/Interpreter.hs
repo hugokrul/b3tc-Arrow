@@ -44,11 +44,11 @@ parseSpace = do
 
 -- | Conversion table
 contentsTable :: [ (Contents, Char)]
-contentsTable =  [ (Empty   , '.' )
-                 , (Lambda  , '\\')
-                 , (Debris  , '%' )
-                 , (Asteroid, 'O' )
-                 , (Boundary, '#' )]
+contentsTable =  [ (Interpreter.Empty   , '.' )
+                 , (Interpreter.Lambda  , '\\')
+                 , (Interpreter.Debris  , '%' )
+                 , (Interpreter.Asteroid, 'O' )
+                 , (Interpreter.Boundary, '#' )]
 
 
 -- Exercise 7

@@ -36,5 +36,5 @@ batch = undefined
 
 main :: IO()
 main = do
-  content <- readFile "C:\\Users\\hugok\\Documents\\code\\b3tc\\b3tc-Arrow\\2-Arrow\\examples\\Add.arrow"
+  content <- readFile ".\\examples\\Add.arrow"
   print $ alexScanTokens content
