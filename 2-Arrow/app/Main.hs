@@ -33,8 +33,3 @@ main = do
   putStrLn "Parsed program:"
   putStrLn ""
   print arr
-
--- main :: IO()
--- main = do
---   content <- readFile ".\\examples\\Add.arrow"
---   print $ alexScanTokens content

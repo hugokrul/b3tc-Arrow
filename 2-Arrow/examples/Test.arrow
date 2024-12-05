@@ -1,1 +1,2 @@
-start       -> turn right, go, turn left.
+start       -> turn right, go, turn left, turnAround.
+turnAround  -> turn right, turn right.

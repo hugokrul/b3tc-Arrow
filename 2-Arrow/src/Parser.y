@@ -35,16 +35,18 @@ import Debug.Trace
 
 
 %%
+Program : Program '.' rule            { $3 : $1 }
+        | Program '.'                 { $1 }
+        | rule                        { [$1] }
+        | {- empty -}                 { [] }
 
-Program : { Rule }
+rule : ident "->" cmds  { Rule $1 $3}
 
-Rule : ident "->" Cmds '.' { Rule $1 $3 }
+cmds : cmds ',' cmd     { $3 : $1 }
+     | cmd              { [$1] }
+     | {- empty -}      { [] }
 
-Cmds : Cmds ',' Cmd     { $3 : $1 }
-     | Cmd              { [$1] }
-     |                  { [] }
-
-Cmd : go                { Model.Go }
+cmd : go                { Model.Go }
     | take              { Model.Take }
     | mark              { Model.Mark }
     | nothing           { Model.CmdNothing }
