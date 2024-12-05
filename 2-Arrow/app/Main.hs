@@ -20,7 +20,7 @@ batch = undefined
 -- and write a new main function.
 main :: IO ()
 main = do
-  chars <- readFile "examples/Test.arrow"
+  chars <- readFile "examples/Add.arrow"
   putStrLn "Input program:"
   putStrLn ""
   putStrLn chars

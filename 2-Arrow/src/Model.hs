@@ -42,7 +42,7 @@ data Rule = Rule String Cmds
 
 type Cmds = [Cmd]
 
-data Cmd = Go | Take | Mark | CmdNothing
+data Cmd = Go | Take | Mark | CmdNothing | CmdEmpty
          | Turn Dir
          | Case Dir Alts
          | Ident String

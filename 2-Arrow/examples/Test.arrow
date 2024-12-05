@@ -1,2 +1,7 @@
 start       -> turn right, go, turn left, turnAround.
 turnAround  -> turn right, turn right.
+
+return      -> case front of
+                 Boundary  ->  nothing;
+                 _         ->  go, return
+               end.
