@@ -8,25 +8,37 @@ import Data.List.Split
 
 %wrapper "basic"
 
-$digit      = [0-9]
 $special    = [\.\;\,\$\|\*\+\?\#\~\-\{\}\(\)\[\]\^\/]
+$digit      = [0-9]
 $alpha      = [a-zA-Z]
 $plus       = \+
+$minus      = \-
 
-@variable = ($alpha|$digit|\+|\-)+
-@case = (case\ ([a-zA-Z]|[0-9]|\+|\-)+\ of)+
-@turn = (turn\ ([a-zA-Z]|[0-9]|\+|\-)+)+
-@pat = (Empty|Lambda|Debris|Asteroid|Boundary|\_)+
-@cmd = (go|take|mark|nothing|@turn|@case|@variable)+
+@variable = ($alpha|$digit|$plus|$minus)+
 
 tokens :-
-  $white+   ;
-  "--".*    ;
+  $white+           ;
+  "--".*            ;
   "->"              { const TArrow }
   "."               { const TDot }
   ","               { const TComma }
+  "go"              { const TGo }
+  "take"            { const TTake }
+  "mark"            { const TMark }
+  "nothing"         { const TNothing }
+  "case"            { const TCase }
+  "of"              { const TOf }
   "end"             { const TEnd }
+  "turn"            { const TTurn }
+  "left"            { const TLeft}
+  "right"           { const TRight}
+  "front"           { const TFront}
   ";"               { const TSemiColon }
-  @cmd              { \input -> TCmd $ parseCmd input}
-  @pat              { \input -> TPat (parsePat input)}
+  "Empty"           { const TEmpty }
+  "Lambda"          { const TLambda }
+  "Debris"          { const TDebris }
+  "Asteroid"        { const TAsteroid }
+  "Boundary"        { const TBoundary }
+  "_"               { const TUnderscore }
+  @variable         { \input -> (TIdent input) }
   _                 ;

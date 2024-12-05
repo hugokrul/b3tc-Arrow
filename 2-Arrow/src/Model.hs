@@ -8,68 +8,50 @@ data Token =
                     TArrow      |
                     TDot        |
                     TComma      |
-                    TCmd Cmd     |
+                    TGo         |
+                    TTake       |
+                    TMark       |
+                    TNothing    |
+                    TTurn       |
+                    TCase       |
+                    TLeft       |
+                    TRight      |
+                    TFront      |
+                    TOf         |
                     TEnd        |
                     TSemiColon  |
-                    TPat Pat    |
-                    Token
-    deriving (Show, Ord, Eq)
-
-newtype Variable = Variable String
-    deriving (Show, Ord, Eq)
-
-data Cmd = Go | Take | Mark | NothingCmd | Turn Dir | Case Dir | VariableCmd Variable
-    deriving (Show, Ord, Eq)
-
-parseCmd :: String -> Cmd
-parseCmd "go" = Model.Go
-parseCmd "take" = Model.Take
-parseCmd "mark" = Model.Mark
-parseCmd "nothing" = Model.NothingCmd
-parseCmd x =    if and [elem y x | y <- "turn "] then parseTurn x else
-                if and [elem y x | y <- "case "]  then parseCase x else
-                Model.VariableCmd (Variable x)
-
-parseCase :: String -> Cmd
-parseCase input = Model.Case (parseDir ((splitOn " " input ) !! 1))
-
-data Pat = Lambda | Debris | Asteroid | Boundary | Underscore | Empty
-    deriving (Show, Ord, Eq)
-
-parsePat :: String -> Pat
-parsePat "Lambda" = Model.Lambda
-parsePat "Debris" = Model.Debris
-parsePat "Asteroid" = Model.Asteroid
-parsePat "Boundary" = Model.Boundary
-parsePat "Empty" = Model.Empty
-parsePat "_" = Model.Underscore
-
-parseTurn :: String -> Cmd
-parseTurn x = let dir = (splitOn " " x) !! 1 in Turn $ parseDir dir
-
-data Dir = Left | Right | Front
-    deriving (Show, Ord, Eq)
-
-parseDir :: String -> Dir
-parseDir "left" = Model.Left
-parseDir "right" = Model.Right
-parseDir "front" = Model.Front
-
--- Exercise 2
-data Program = Program { rules :: [Rule] }
+                    TEmpty      |
+                    TLambda     |
+                    TDebris     |
+                    TAsteroid   |
+                    TBoundary   |
+                    TUnderscore |
+                    Token       |
+                    TIdent String
     deriving (Show, Eq, Ord)
 
+data Dir = Left | Right | Front
+    deriving (Show, Eq, Ord)
 
-data Rule = Rule {  variable :: Variable,
-                    cmds     :: [Cmd]
-                 } 
-    deriving (Eq, Ord)
+-- Exercise 2
+newtype Program = Program { rules :: Rule }
+    deriving (Show, Eq, Ord)
 
-instance Show Rule where
-    show = printRule
+data Rule = Rule String Cmds
+  deriving (Show, Eq, Ord)
 
-printRule :: Rule -> String
-printRule (Rule (Variable x) y) = x ++ " " ++(show y)
+type Cmds = [Cmd]
 
-testRule :: Rule
-testRule = Rule (Variable "ewas") [Go, (Turn Model.Left)]
+data Cmd = Go | Take | Mark | CmdNothing
+         | Turn Dir
+         | Case Dir Alts
+         | Ident String
+    deriving (Show, Eq, Ord)
+        
+type Alts = [Alt]
+
+data Alt = Alt Pat Cmds
+    deriving (Show, Eq, Ord)
+
+data Pat = Empty | Lambda | Debris | Asteroid | Boundary | Underscore
+    deriving (Show, Eq, Ord)
