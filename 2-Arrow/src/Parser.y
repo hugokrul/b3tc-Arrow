@@ -2,13 +2,14 @@
 module Parser where
 
 import Model
+import Debug.Trace
 }
 
 %name parser
 %tokentype { Token }
 
 %token
-  x { Token }
+  '->' { TArrow }
 
 %%
 
