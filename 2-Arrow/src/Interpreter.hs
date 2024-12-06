@@ -6,7 +6,9 @@ import Data.Map (Map)
 import qualified Data.Map as L
 
 import Data.Char (isSpace)
-import Control.Monad (replicateM)
+import Control.Monad (replicateM, join)
+import Debug.Trace
+import Data.List.Split
 
 import Lexer
 import Parser
@@ -14,13 +16,19 @@ import Model
 import Algebra
 
 
+
 data Contents  =  Empty | Lambda | Debris | Asteroid | Boundary
+
+instance Show Contents where
+  show Interpreter.Empty = "."
+  show Interpreter.Lambda = "\\"
+  show Interpreter.Debris = "%"
+  show Interpreter.Asteroid = "O"
+  show Interpreter.Boundary = "#"
 
 type Size      =  Int
 type Pos       =  (Int, Int)
 type Space     =  Map Pos Contents
-
-
 
 -- | Parses a space file, such as the ones in the examples folder.
 parseSpace :: Parser Char Space
@@ -53,8 +61,19 @@ contentsTable =  [ (Interpreter.Empty   , '.' )
 
 -- Exercise 7
 printSpace :: Space -> String
-printSpace = undefined
+printSpace input = do 
+  let width = fst (fst (L.findMax input))
+  let height = snd (fst (L.findMax input))
+  let test = chunksOf (width + 1) $ L.elems input
+  "(" ++ show width ++ ", " ++ show height ++ ")" ++ "\n" ++ printChunks test
 
+printChunks :: [[Contents]] -> String
+printChunks [] = ""
+printChunks (x:xs) = printChunk x ++ printChunks xs
+  where 
+    printChunk :: [Contents] -> String
+    printChunk [] = "\n"
+    printChunk (x:xs) = show x ++ printChunk xs
 
 -- These three should be defined by you
 type Ident = ()
