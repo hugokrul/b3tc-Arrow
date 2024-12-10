@@ -1,5 +1,4 @@
 module Interpreter where
-
 import ParseLib
 
 import Data.Map (Map)
@@ -74,8 +73,8 @@ printChunks (x:xs) = printChunk x ++ printChunks xs
     printChunk (x:xs) = show x ++ printChunk xs
 
 -- These three should be defined by you
-type Ident = ()
-type Commands = ()
+type Ident = Cmd -- is always Ident String
+type Commands = [Cmd]
 type Heading = ()
 
 type Environment = Map Ident Commands

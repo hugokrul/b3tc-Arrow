@@ -34,23 +34,23 @@ data Dir = Left | Right | Front
     deriving (Show, Eq, Ord)
 
 -- Exercise 2
-newtype Program = Program { rules :: Rule }
+newtype Program = Program { rules :: [Rule] }
     deriving (Show, Eq, Ord)
 
-data Rule = Rule String Cmds
+data Rule = Rule { name :: String, cmds :: Cmds}
   deriving (Show, Eq, Ord)
 
 type Cmds = [Cmd]
 
 data Cmd = Go | Take | Mark | CmdNothing | CmdEmpty
          | Turn Dir
-         | Case Dir Alts
-         | Ident String
+         | Case { caseDir :: Dir, caseAlts :: Alts }
+         | Ident { identName :: String }
     deriving (Show, Eq, Ord)
         
 type Alts = [Alt]
 
-data Alt = Alt Pat Cmds
+data Alt = Alt { pat :: Pat, altCmds :: Cmds }
     deriving (Show, Eq, Ord)
 
 data Pat = Empty | Lambda | Debris | Asteroid | Boundary | Underscore

@@ -35,14 +35,14 @@ import Debug.Trace
 
 
 %%
-Program : Program '.' rule            { $3 : $1 }
+Program : Program '.' rule            { $1 ++ [$3] }
         | Program '.'                 { $1 }
         | rule                        { [$1] }
         | {- empty -}                 { [] }
 
 rule : ident "->" cmds  { Rule $1 $3}
 
-cmds : cmds ',' cmd     { $3 : $1 }
+cmds : cmds ',' cmd     { $1 ++ [$3] }
      | cmd              { [$1] }
      | {- empty -}      { [] }
 
@@ -60,7 +60,7 @@ dir : left    { Model.Left }
     | right   { Model.Right }
     | front   { Model.Front }
 
-alts : alts ';' alt   { $3 : $1 }
+alts : alts ';' alt   { $1 ++ [$3] }
      | alt            { [$1] }
      | {- empty -}    { [] }
 

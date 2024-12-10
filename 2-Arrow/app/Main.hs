@@ -21,7 +21,7 @@ batch = undefined
 -- and write a new main function.
 main :: IO()
 main = do
-  mainSpace
+  mainArrow
 
 mainSpace :: IO()
 mainSpace = do
@@ -40,7 +40,7 @@ mainArrow = do
   putStrLn "Tokens:"
   putStrLn ""
   print tokens
-  let arr = parser tokens
+  let arr = Program (parser tokens) :: Program
   putStrLn "Parsed program:"
   putStrLn ""
   print arr
