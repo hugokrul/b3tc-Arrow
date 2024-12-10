@@ -6,27 +6,8 @@ import Debug.Trace
 
 import Data.List
 
-{-
-There are no calls to undefined rules (rules may be used before they are defined though).
-There is a rule named start.
-No rule is defined twice (Int, [Rule] -> Int -> Int)
-voor bovenstaande 3 kan je een count functie dan maken met algebra,
-count? string -> int
-
-ik snap er de ballen van...
-
-There is no possibility for pattern match failure, i.e., 
-    all case expressions must either contain a catch-all pattern _ or contain cases for all five other options.
--}
-
-testProgram :: Program
-testProgram = Program [Rule "start" [Turn Model.Right,Go,Turn Model.Left,Ident "firstArg"],Rule "turnAround" [Turn Model.Right,Turn Model.Right],Rule "return" [Case Front [Alt Boundary [CmdNothing], Alt Underscore [Go, Ident "return"]]],Rule "firstArg" [Case Model.Left [Alt Lambda [Go,Ident "firstArg",Mark,Go],Alt Underscore [Ident "turnAround",Ident "return",Turn Model.Left,Go,Go,Turn Model.Left,Ident "secondArg"]]],Rule "secondArg" [Case Model.Left [Alt Lambda [Go,Ident "secondArg",Mark,Go],Alt Underscore [Ident "turnAround",Ident "return",Turn Model.Left,Go,Turn Model.Left]]]]
-
-testCommand :: [Cmd]
-testCommand = [Case Front [Alt Boundary [CmdNothing],Alt Underscore [Go,Ident "return"]]]
-
-
 -- Exercise 5
+-- the algebra exists of a combination of algebras of all the type of the gramar
 data Algebra program rule cmd dir alt pat = Algebra {   programAlg  :: ProgramAlgebra rule program,
                                                         rulesAlg    :: RuleAlgebra String cmd rule,
                                                         commandsAlg :: CmdAlgebra cmd dir alt String,
@@ -59,6 +40,7 @@ data PatAlgebra pat              = PatAlgebra        { patEmpty :: pat,
                                                        patBoundary :: pat,
                                                        patUnderscore :: pat }
 
+-- a default algebra, this way we don't have to write unnecessary stuf, but we can update the defaultalgebra records
 defaultAlgebra :: a -> b -> c -> d -> e -> f -> Algebra a b c d e f
 defaultAlgebra in1 in2 in3 in4 in5 in6 = Algebra
     {
@@ -79,28 +61,32 @@ defaultAlgebra in1 in2 in3 in4 in5 in6 = Algebra
       patAlg      = PatAlgebra in6 in6 in6 in6 in6 in6
     }
 
-startAlgebra :: Algebra Int Int Int Int Int Int
+-- counts all rules, if the rule has the name: start: it adds one up
+startAlgebra :: Algebra Bool Int Int Int Int Int
 startAlgebra = (defaultAlgebra 0 0 0 0 0 0)  {
-                                programAlg = ProgramAlgebra sum,
+                                programAlg = ProgramAlgebra (\rule -> sum rule == 1),
                                 rulesAlg = RuleAlgebra (\name _ -> if name == "start" then 1 else 0)
                             }
 
+-- checks if the original list of names is equal to the list of names if you remove the duplicates
 duplicateAlgebra :: Algebra Bool [String] () () () ()
 duplicateAlgebra = (defaultAlgebra True [] () () () ()) {
                                 programAlg = ProgramAlgebra (\names -> length names /= length (nub names)),
                                 rulesAlg = RuleAlgebra (\name _ -> [name])
                             }
 
+-- a list of all the names of all the rules
 ruleNameAlgebra :: Algebra [String] String () () () ()
 ruleNameAlgebra = (defaultAlgebra [] "" () () () ()) {
                                 programAlg = ProgramAlgebra id,
                                 rulesAlg = RuleAlgebra const
                             }
 
+-- a list of them names of all the Variable rule calls
 identNameAlgebra :: Algebra [String] [String] [String] () [String] ()
 identNameAlgebra = (defaultAlgebra [] [] [] () [] ())
-                            {   programAlg  = ProgramAlgebra concat, -- Concatenate all collected Ident names
-                                rulesAlg    = RuleAlgebra (\_ cmds -> concat cmds), -- Collect from commands in each rule
+                            {   programAlg  = ProgramAlgebra concat,
+                                rulesAlg    = RuleAlgebra (\_ cmds -> concat cmds),
                                 commandsAlg = CmdAlgebra
                                     {   cmdGo      = [],
                                         cmdTake    = [],
@@ -108,16 +94,17 @@ identNameAlgebra = (defaultAlgebra [] [] [] () [] ())
                                         cmdNothing = [],
                                         cmdEmpty   = [],
                                         cmdTurn    = const [],
-                                        cmdCase    = \_ alts -> concat alts, -- Collect from alternatives in a case
-                                        cmdIdent   = (: []) -- Collect the Ident name
+                                        cmdCase    = \_ alts -> concat alts,
+                                        cmdIdent   = (: [])
                                     },
                                 altAlg      = AltAlgebra (\_ cmds -> concat cmds)
                             }
 
+-- a list of all the patterns, for every case
 allPatterns :: Algebra [[Pat]] [[Pat]] [[Pat]] () [Pat] Pat
 allPatterns = (defaultAlgebra [] [] [] () [] [])
-                            {   programAlg  = ProgramAlgebra concat, -- Concatenate all collected Ident names
-                                rulesAlg    = RuleAlgebra (\_ cmds -> concat cmds), -- Collect from commands in each rule
+                            {   programAlg  = ProgramAlgebra concat,
+                                rulesAlg    = RuleAlgebra (\_ cmds -> concat cmds),
                                 commandsAlg = CmdAlgebra
                                     {   cmdGo      = [],
                                         cmdTake    = [],
@@ -125,8 +112,8 @@ allPatterns = (defaultAlgebra [] [] [] () [] [])
                                         cmdNothing = [],
                                         cmdEmpty   = [],
                                         cmdTurn    = const [],
-                                        cmdCase    = \_ alts -> [concat alts], -- Collect from alternatives in a case
-                                        cmdIdent   = const [] -- Collect the Ident name
+                                        cmdCase    = \_ alts -> [concat alts],
+                                        cmdIdent   = const []
                                     },
                                 altAlg      = AltAlgebra (\pat cmds -> pat : concat (concat cmds)),
                                 patAlg      = PatAlgebra {
@@ -151,15 +138,19 @@ fold (
     patAlg
     ) = foldProgram
     where
+        -- foldProgram folds all the rules of 1 program
         foldProgram (Program rules) = p1 programAlg (map foldRule rules)
+        -- foldRule folds all the commands of 1 rule
         foldRule (Rule name commands) = r1 rulesAlg name (map foldCmd commands)
 
+        -- own defined commands
         foldCmd Go = cmdGo commandsAlg
         foldCmd Take = cmdTake commandsAlg
         foldCmd Mark = cmdMark commandsAlg
         foldCmd CmdNothing = cmdNothing commandsAlg
         foldCmd CmdEmpty = cmdEmpty commandsAlg
         foldCmd (Turn turnDir) = cmdTurn commandsAlg (foldDir turnDir)
+        -- also folds all the commands in the cases
         foldCmd (Case caseDir caseAlts) = cmdCase commandsAlg (foldDir caseDir) (map foldAlt caseAlts)
         foldCmd (Ident name) = cmdIdent commandsAlg name
 
@@ -167,6 +158,7 @@ fold (
         foldDir Model.Right = dirRight dirAlg
         foldDir Model.Front = dirFront dirAlg
 
+        -- folds all the alternative commands used in cases 
         foldAlt (Alt pat commands) = alt1 altAlg (foldPat pat) (map foldCmd commands)
 
         foldPat Empty = patEmpty patAlg
@@ -179,11 +171,17 @@ fold (
 -- Exercise 6
 checkProgram :: Program -> Bool
 checkProgram program = do
-    let start = fold startAlgebra program == 1
+    -- check if the program has only 1 start command
+    let start = fold startAlgebra program
+    -- checks if there are no duplicates
     let noDuplicates = not $ fold duplicateAlgebra program
+    -- a list of all the rules
     let allRules = nub $ fold ruleNameAlgebra program
+    -- a list of all the variable rules
     let allIdents = nub $ fold identNameAlgebra program
+    -- checks if there are left over variable rules from the difference between the variables and the rules
     let noUndefined = null (allIdents \\ allRules)
+    -- checks if all the cases consists of either an underscore, or all the 5 different patterns.
     let patternFailure = all checkAllPatterns (fold allPatterns program)
 
     start && noDuplicates && noUndefined && patternFailure
