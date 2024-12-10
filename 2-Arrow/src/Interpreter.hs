@@ -110,6 +110,7 @@ toEnvironment input = do
 makeEnvironment :: Program -> Environment -> Environment
 makeEnvironment (Program rules) = makeEnvironment' rules
   where
+    -- TODO: insert not alphabetically
     makeEnvironment' :: [Rule] -> Environment -> Environment
     makeEnvironment' [] env = Map.empty
     makeEnvironment' ((Rule name cmds):xs) env = Map.insert name cmds (makeEnvironment' xs env)
