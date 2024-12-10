@@ -3,7 +3,7 @@ module Interpreter where
 import ParseLib
 
 import Data.Map (Map)
-import qualified Data.Map as L
+import qualified Data.Map as Map
 
 import Data.Char (isSpace)
 import Control.Monad (replicateM, join)
@@ -18,13 +18,10 @@ import Algebra
 
 
 data Contents  =  Empty | Lambda | Debris | Asteroid | Boundary
+  deriving (Eq, Ord)
 
 instance Show Contents where
-  show Interpreter.Empty = "."
-  show Interpreter.Lambda = "\\"
-  show Interpreter.Debris = "%"
-  show Interpreter.Asteroid = "O"
-  show Interpreter.Boundary = "#"
+  show x = [Map.fromList contentsTable Map.! x]
 
 type Size      =  Int
 type Pos       =  (Int, Int)
@@ -38,7 +35,7 @@ parseSpace = do
     -- read |mr + 1| rows of |mc + 1| characters
     css      <- replicateM (mr + 1) (replicateM (mc + 1) contents)
     -- convert from a list of lists to a finite map representation
-    return $ L.fromList $ concat $
+    return $ Map.fromList $ concat $
             zipWith (\r cs ->
               zipWith (\c d -> ((r, c), d)) [0..] cs) [0..] css
   where
@@ -62,9 +59,9 @@ contentsTable =  [ (Interpreter.Empty   , '.' )
 -- Exercise 7
 printSpace :: Space -> String
 printSpace input = do 
-  let width = fst (fst (L.findMax input))
-  let height = snd (fst (L.findMax input))
-  let test = chunksOf (width + 1) $ L.elems input
+  let width = fst (fst (Map.findMax input))
+  let height = snd (fst (Map.findMax input))
+  let test = chunksOf (width + 1) $ Map.elems input
   "(" ++ show width ++ ", " ++ show height ++ ")" ++ "\n" ++ printChunks test
 
 printChunks :: [[Contents]] -> String
