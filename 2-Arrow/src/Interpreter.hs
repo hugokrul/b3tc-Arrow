@@ -59,7 +59,7 @@ testSpace :: String
 testSpace = "(7,7)\n.O....O.\n.OOO.OO.\n...O.O..\n.O...OO.\n.O.O....\n.O.O.OOO\nOOOO....\n\\....O.O"
 
 run :: Parser Char Space -> String -> Space
-run parser input = fromMaybe Map.empty (run' parser input) 
+run parser input = fromMaybe Map.empty (run' parser input)
   where
     run' :: Parser Char Space -> String -> Maybe Space
     run' parser input =
@@ -71,7 +71,7 @@ run parser input = fromMaybe Map.empty (run' parser input)
 
 -- Exercise 7
 printSpace :: Space -> String
-printSpace input = do 
+printSpace input = do
   let width = fst (fst (Map.findMax input))
   let height = snd (fst (Map.findMax input))
   -- splits the input with a give width
@@ -81,13 +81,13 @@ printSpace input = do
 printChunks :: [[Contents]] -> String
 printChunks [] = ""
 printChunks (x:xs) = printChunk x ++ printChunks xs
-  where 
+  where
     printChunk :: [Contents] -> String
     printChunk [] = "\n"
     printChunk (x:xs) = show x ++ printChunk xs
 
 -- These three should be defined by you
-type Ident = Cmd -- is always Ident String
+type Ident = String -- is always Ident String
 type Commands = [Cmd]
 type Heading = ()
 
@@ -102,7 +102,17 @@ data Step =  Done  Space Pos Heading
 
 -- | Exercise 8
 toEnvironment :: String -> Environment
-toEnvironment = undefined
+toEnvironment input = do
+  let tokens = alexScanTokens input
+  let program = Program (parser tokens) :: Program
+  if checkProgram program then makeEnvironment program Map.empty else Map.empty
+
+makeEnvironment :: Program -> Environment -> Environment
+makeEnvironment (Program rules) = makeEnvironment' rules
+  where
+    makeEnvironment' :: [Rule] -> Environment -> Environment
+    makeEnvironment' [] env = Map.empty
+    makeEnvironment' ((Rule name cmds):xs) env = Map.insert name cmds (makeEnvironment' xs env)
 
 -- | Exercise 9
 step :: Environment -> ArrowState -> Step

@@ -32,15 +32,5 @@ mainSpace = do
 mainArrow :: IO ()
 mainArrow = do
   chars <- readFile "examples/Add.arrow"
-  putStrLn "Input program:"
-  putStrLn ""
-  putStrLn chars
-  putStrLn ""
-  let tokens = alexScanTokens chars
-  putStrLn "Tokens:"
-  putStrLn ""
-  print tokens
-  let arr = Program (parser tokens) :: Program
-  putStrLn "Parsed program:"
-  putStrLn ""
-  print arr
+  let env = toEnvironment chars
+  print env
