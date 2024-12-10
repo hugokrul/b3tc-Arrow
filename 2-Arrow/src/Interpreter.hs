@@ -8,6 +8,7 @@ import Data.Char (isSpace)
 import Control.Monad (replicateM, join)
 import Debug.Trace
 import Data.List.Split
+import Data.Maybe
 
 import Lexer
 import Parser
@@ -54,6 +55,19 @@ contentsTable =  [ (Interpreter.Empty   , '.' )
                  , (Interpreter.Asteroid, 'O' )
                  , (Interpreter.Boundary, '#' )]
 
+testSpace :: String
+testSpace = "(7,7)\n.O....O.\n.OOO.OO.\n...O.O..\n.O...OO.\n.O.O....\n.O.O.OOO\nOOOO....\n\\....O.O"
+
+run :: Parser Char Space -> String -> Space
+run parser input = fromMaybe Map.empty (run' parser input) 
+  where
+    run' :: Parser Char Space -> String -> Maybe Space
+    run' parser input =
+        case parse parser input of
+            [] -> Nothing
+            [(result, _)] -> Just result
+            (result, []):xs -> Just result
+            (result, t):xs -> run' parser t
 
 -- Exercise 7
 printSpace :: Space -> String
