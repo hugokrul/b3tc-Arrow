@@ -4,6 +4,8 @@ import Model
 
 import Debug.Trace
 
+import Data.List
+
 {-
 There are no calls to undefined rules (rules may be used before they are defined though).
 There is a rule named start.
@@ -25,9 +27,6 @@ testCommand = [Case Front [Alt Boundary [CmdNothing],Alt Underscore [Go,Ident "r
 
 
 -- Exercise 5
-
-data TestAlgebra r a = RuleAlg { x :: r -> a -> a, y :: a }
-
 data Algebra program rule cmd dir alt pat = Algebra {   programAlg  :: ProgramAlgebra rule program,
                                                         rulesAlg    :: RuleAlgebra String cmd rule,
                                                         commandsAlg :: CmdAlgebra cmd dir alt String,
@@ -60,6 +59,87 @@ data PatAlgebra pat              = PatAlgebra        { patEmpty :: pat,
                                                        patBoundary :: pat,
                                                        patUnderscore :: pat }
 
+defaultAlgebra :: a -> b -> c -> d -> e -> f -> Algebra a b c d e f
+defaultAlgebra in1 in2 in3 in4 in5 in6 = Algebra
+    {
+      programAlg  = ProgramAlgebra (const in1),
+      rulesAlg    = RuleAlgebra (\_ _ -> in2),
+      commandsAlg = CmdAlgebra
+        { cmdGo      = in3,
+          cmdTake    = in3,
+          cmdMark    = in3,
+          cmdNothing = in3,
+          cmdEmpty   = in3,
+          cmdTurn    = const in3,
+          cmdCase    = \x y -> in3,
+          cmdIdent   = const in3
+        },
+      dirAlg      = DirAlgebra in4 in4 in4,
+      altAlg      = AltAlgebra (\_ _ -> in5),
+      patAlg      = PatAlgebra in6 in6 in6 in6 in6 in6
+    }
+
+startAlgebra :: Algebra Int Int Int Int Int Int
+startAlgebra = (defaultAlgebra 0 0 0 0 0 0)  {
+                                programAlg = ProgramAlgebra sum,
+                                rulesAlg = RuleAlgebra (\name _ -> if name == "start" then 1 else 0)
+                            }
+
+duplicateAlgebra :: Algebra Bool [String] () () () ()
+duplicateAlgebra = (defaultAlgebra True [] () () () ()) {
+                                programAlg = ProgramAlgebra (\names -> length names /= length (nub names)),
+                                rulesAlg = RuleAlgebra (\name _ -> [name])
+                            }
+
+ruleNameAlgebra :: Algebra [String] String () () () ()
+ruleNameAlgebra = (defaultAlgebra [] "" () () () ()) {
+                                programAlg = ProgramAlgebra id,
+                                rulesAlg = RuleAlgebra const
+                            }
+
+identNameAlgebra :: Algebra [String] [String] [String] () [String] ()
+identNameAlgebra = (defaultAlgebra [] [] [] () [] ())
+                            {   programAlg  = ProgramAlgebra concat, -- Concatenate all collected Ident names
+                                rulesAlg    = RuleAlgebra (\_ cmds -> concat cmds), -- Collect from commands in each rule
+                                commandsAlg = CmdAlgebra
+                                    {   cmdGo      = [],
+                                        cmdTake    = [],
+                                        cmdMark    = [],
+                                        cmdNothing = [],
+                                        cmdEmpty   = [],
+                                        cmdTurn    = const [],
+                                        cmdCase    = \_ alts -> concat alts, -- Collect from alternatives in a case
+                                        cmdIdent   = (: []) -- Collect the Ident name
+                                    },
+                                altAlg      = AltAlgebra (\_ cmds -> concat cmds)
+                            }
+
+allPatterns :: Algebra [[Pat]] [[Pat]] [[Pat]] () [Pat] Pat
+allPatterns = (defaultAlgebra [] [] [] () [] [])
+                            {   programAlg  = ProgramAlgebra concat, -- Concatenate all collected Ident names
+                                rulesAlg    = RuleAlgebra (\_ cmds -> concat cmds), -- Collect from commands in each rule
+                                commandsAlg = CmdAlgebra
+                                    {   cmdGo      = [],
+                                        cmdTake    = [],
+                                        cmdMark    = [],
+                                        cmdNothing = [],
+                                        cmdEmpty   = [],
+                                        cmdTurn    = const [],
+                                        cmdCase    = \_ alts -> [concat alts], -- Collect from alternatives in a case
+                                        cmdIdent   = const [] -- Collect the Ident name
+                                    },
+                                altAlg      = AltAlgebra (\pat cmds -> pat : concat (concat cmds)),
+                                patAlg      = PatAlgebra {
+                                    patEmpty = Empty,
+                                    patLambda = Lambda,
+                                    patDebris = Debris,
+                                    patAsteroid = Asteroid,
+                                    patBoundary = Boundary,
+                                    patUnderscore = Underscore
+                                }
+                            }
+
+
 fold :: Algebra program rule cmd dir alt pat -> Program -> program
 fold (
     Algebra
@@ -83,12 +163,12 @@ fold (
         foldCmd (Case caseDir caseAlts) = cmdCase commandsAlg (foldDir caseDir) (map foldAlt caseAlts)
         foldCmd (Ident name) = cmdIdent commandsAlg name
 
-        foldDir Model.Left = dirLeft dirAlg 
-        foldDir Model.Right = dirRight dirAlg 
+        foldDir Model.Left = dirLeft dirAlg
+        foldDir Model.Right = dirRight dirAlg
         foldDir Model.Front = dirFront dirAlg
 
         foldAlt (Alt pat commands) = alt1 altAlg (foldPat pat) (map foldCmd commands)
-        
+
         foldPat Empty = patEmpty patAlg
         foldPat Lambda = patLambda patAlg
         foldPat Debris = patDebris patAlg
@@ -96,53 +176,17 @@ fold (
         foldPat Boundary = patBoundary patAlg
         foldPat Underscore = patUnderscore patAlg
 
-countAlgebra :: TestAlgebra Rule Int
-countAlgebra = RuleAlg x 0
-    where
-        x :: Rule -> Int -> Int
-        x _ y = y+1
-
-filterCountAlgebra :: String -> TestAlgebra Rule Int
-filterCountAlgebra s = RuleAlg x 0
-    where
-        x :: Rule -> Int -> Int
-        x (Rule name cmds) y = if name == s then y + 1 else y
-
-cmdPatAlgebra :: TestAlgebra Cmd [Pat]
-cmdPatAlgebra = RuleAlg x []
-    where
-        x :: Cmd -> [Pat] -> [Pat]
-        x (Case dir []) _ = []
-        x (Case dir n) acc = map pat n
-        x _ _ = []
-
-testfold :: TestAlgebra r a -> [r] -> a
-testfold alg = foldr (x alg) (y alg)
-
-
-
 -- Exercise 6
-
 checkProgram :: Program -> Bool
-checkProgram p = do
-    let start = testfold (filterCountAlgebra "start") (rules p) == 1
-
-    let noDuplicates = let
-            allRules = rules p
-            noDups = map ((\n -> testfold (filterCountAlgebra n) allRules == 1) . name) allRules
-            in and noDups
-
-    let noUndefined = let
-            allRules = rules p
-            in True
-
-    let patternFailure = let
-            allRules = rules p
-            allCmds = map cmds allRules
-            underscoreOrAllPatterns = map (\cmd -> let pats = testfold cmdPatAlgebra cmd in ((null pats || elem Model.Underscore pats) || checkAllPatterns pats)) allCmds
-            in and underscoreOrAllPatterns
+checkProgram program = do
+    let start = fold startAlgebra program == 1
+    let noDuplicates = not $ fold duplicateAlgebra program
+    let allRules = nub $ fold ruleNameAlgebra program
+    let allIdents = nub $ fold identNameAlgebra program
+    let noUndefined = null (allIdents \\ allRules)
+    let patternFailure = all checkAllPatterns (fold allPatterns program)
 
     start && noDuplicates && noUndefined && patternFailure
-
-checkAllPatterns :: [Pat] -> Bool
-checkAllPatterns pats = elem Model.Empty pats && elem Model.Lambda pats && elem Model.Debris pats && elem Model.Asteroid pats && elem Model.Boundary pats
+    where 
+        checkAllPatterns :: [Pat] -> Bool
+        checkAllPatterns pats = elem Model.Underscore pats || (elem Model.Empty pats && elem Model.Lambda pats && elem Model.Debris pats && elem Model.Asteroid pats && elem Model.Boundary pats)
