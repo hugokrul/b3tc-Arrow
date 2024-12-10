@@ -61,7 +61,7 @@ printSpace :: Space -> String
 printSpace input = do 
   let width = fst (fst (Map.findMax input))
   let height = snd (fst (Map.findMax input))
-  -- splits the input with a give width
+  -- splits the input with a give width 
   let chunks = chunksOf (width + 1) $ Map.elems input
   "(" ++ show width ++ ", " ++ show height ++ ")" ++ "\n" ++ printChunks chunks
 
