@@ -58,8 +58,8 @@ contentsTable =  [ (Interpreter.Empty   , '.' )
 testSpace :: String
 testSpace = "(7,7)\n.O....O.\n.OOO.OO.\n...O.O..\n.O...OO.\n.O.O....\n.O.O.OOO\nOOOO....\n\\....O.O"
 
-run :: Parser Char Space -> String -> Space
-run parser input = fromMaybe Map.empty (run' parser input)
+stringToSpace :: String -> Space
+stringToSpace input = fromMaybe Map.empty (run' parseSpace input)
   where
     run' :: Parser Char Space -> String -> Maybe Space
     run' parser input =
