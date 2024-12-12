@@ -16,8 +16,11 @@ $minus      = \-
 
 @variable = ($alpha|$digit|$plus|$minus)+
 
+-- seperate all the tokens
 tokens :-
+  -- whitespace gets ignored
   $white+           ;
+  -- "--" are comments and get ignored
   "--".*            ;
   "->"              { const TArrow }
   "."               { const TDot }
@@ -40,5 +43,7 @@ tokens :-
   "Asteroid"        { const TAsteroid }
   "Boundary"        { const TBoundary }
   "_"               { const TUnderscore }
+  -- a variable are one or more letters, digits, plus's or minus's
   @variable         { \input -> (TIdent input) }
+  -- the rest gets ignored
   _                 ;

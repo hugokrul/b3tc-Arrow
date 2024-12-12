@@ -6,20 +6,20 @@ import qualified Data.Map as Map
 
 import Data.Char (isSpace)
 import Control.Monad (replicateM, join)
-import Debug.Trace
 import Data.List.Split
 import Data.List
 import Data.Maybe
+
 import Lexer
 import Parser
 import Model
 import Algebra
 
-
-
+-- the available contents
 data Contents  =  Empty | Lambda | Debris | Asteroid | Boundary
   deriving (Eq, Ord)
 
+-- contents get looked up in the contentstable
 instance Show Contents where
   show x = [Map.fromList contentsTable Map.! x]
 
@@ -55,9 +55,7 @@ contentsTable =  [ (Interpreter.Empty   , '.' )
                  , (Interpreter.Asteroid, 'O' )
                  , (Interpreter.Boundary, '#' )]
 
-testSpace :: String
-testSpace = "(7,7)\n.O....O.\n.OOO.OO.\n...O.O..\n.O...OO.\n.O.O....\n.O.O.OOO\nOOOO....\n\\....O.O"
-
+-- parses the string a string using the parser parseSpace, if it doesn't parse, it gives back an empty space
 stringToSpace :: String -> Space
 stringToSpace input = fromMaybe Map.empty (run' parseSpace input)
   where
@@ -72,10 +70,10 @@ stringToSpace input = fromMaybe Map.empty (run' parseSpace input)
 -- Exercise 7
 printSpace :: Space -> String
 printSpace input = do
-  let width = fst (fst (Map.findMax input))
-  let height = snd (fst (Map.findMax input))
+  let height = fst (fst (Map.findMax input))
+  let width = snd (fst (Map.findMax input))
   -- splits the input with a give width
-  let chunks = chunksOf (height + 1) $ Map.elems input
+  let chunks = chunksOf (width + 1) $ Map.elems input
   "(" ++ show width ++ ", " ++ show height ++ ")" ++ "\n" ++ printChunks chunks
 
 printChunks :: [[Contents]] -> String
@@ -89,13 +87,15 @@ printChunks (x:xs) = printChunk x ++ printChunks xs
 -- These three should be defined by you
 type Ident = String -- is always Ident String
 type Commands = [Cmd]
-type Altsmap = Map Pat Commands
+type Altsmap = Map Pat Commands -- a way to lookup the patterns with the given commands
 data Heading = North | East | South | West
   deriving (Eq, Ord, Show, Enum, Read)
 
 type Environment = Map Ident Commands
 
+-- i.e. [Cmd]
 type Stack       =  Commands
+-- uses a record because it is only necessary to update one or more attributes
 data ArrowState  =  ArrowState {space :: Space, pos :: Pos, heading :: Heading, stack :: Stack}
   deriving Show
 
@@ -107,39 +107,58 @@ data Step =  Done  Space Pos Heading
 -- | Exercise 8
 toEnvironment :: String -> Environment
 toEnvironment input = do
-  let tokens = alexScanTokens input
+  -- first lexes
+  let tokens = alexScanTokens input :: [Token]
+  -- then parses the program
   let program = Program (parser tokens) :: Program
+  -- if the program is valid, it makes the environment, else it gives back an empty environment
   if checkProgram program then makeEnvironment program else Map.empty
     where
+      -- for every rules in the program, it adds the name and commands to the Map
       makeEnvironment = Map.fromList . map (\(Rule name cmds) -> (name, cmds)) . rules -- rules :: Program -> [Rule]
 
+-- loads the start ident in the stack, the rest gets loaded in by the step function
 loadStack :: Environment -> Stack
 loadStack env = fromMaybe [] (Map.lookup "start" env)
 
 -- | Exercise 9
 step :: Environment -> ArrowState -> Step
+-- gets an environment and arrowstate and executes one command from the stack
 step env arrowState@(ArrowState space position@(x, y) heading stack) =
-  case currentCommand of
-    Just x -> stepCommand x
+  case maybeCommand of
+    Just currentCommand -> stepCommand currentCommand
+    -- if the list is empty, the program must be done
     Nothing -> Done space position heading
 
   where
-    currentCommand = safeHead stack
+    maybeCommand = safeHead stack -- safeHead gives back a maybe if the list is empty
+    -- deletes the first element from the stap, i.e., maybeCommand.
     updatedState = arrowState {stack = safeTail stack}
 
+    -- executes one command from the step
     stepCommand :: Cmd -> Step
     stepCommand x = 
       case x of
+        -- updates the position with next position
         Go             -> Ok updatedState { pos = goStep heading}
+        -- updates the space
         Take           -> Ok updatedState { space = takeStep }
+        -- marks the space
         Mark           -> Ok updatedState { space = markStep }
+        -- does nothing
         CmdNothing     -> Ok updatedState
+        -- updates the heading of the "space ship"
         Turn dir       -> Ok updatedState { heading = updateHeading dir }
+        -- executes the case. 
+        -- Also replaces the entire state, so it can fail
         Case dir alts  -> caseStep dir alts
+        -- updates the stack with the comments of the ident
+        -- replaces the entire state, this is because now it can fail if the variable is not found
         Ident variable -> identStep variable
+        -- if the commands don't get recognised, the execution must fail.
         _              -> Fail "Failed execution"
 
-
+    -- Takes a step in the current direction not if the next position is an asteroid or a boundary
     goStep :: Heading -> Pos
     goStep heading = do
       let nextPosition = case heading of
@@ -150,11 +169,14 @@ step env arrowState@(ArrowState space position@(x, y) heading stack) =
       let nextSpaceItem = Map.lookup nextPosition space
       case nextSpaceItem of
         Just content -> case content of
+                          -- returns the original position, if it can't move
                           Interpreter.Asteroid -> position
                           Interpreter.Boundary -> position
                           _ -> nextPosition
+        -- returns the original position, if it can't move
         Nothing -> position
 
+    -- takes the lambda and debris from the corrent position and replaces it with Empty
     takeStep :: Space
     takeStep = do
       let maybeContents = Map.lookup position space
@@ -165,21 +187,26 @@ step env arrowState@(ArrowState space position@(x, y) heading stack) =
                           _ -> space
         Nothing -> space
     
+    -- replaces the content with a lambda
     markStep :: Space
     markStep = Map.adjust (const Interpreter.Lambda) position space
 
-    -- todo
     caseStep :: Dir -> Alts -> Step
     caseStep dir alts = do
+      -- replaces the case with commands of the pattern
+      -- so it first has to delete the case from the stack
       let ArrowState _ _ _ updatedStack = updatedState
       let tempHeading = updateHeading dir
+      -- first checks the new position in which the case want to check for patterns
       let tempPos = case tempHeading of
                       North -> (x-1, y)
                       East  -> (x, y+1)
                       South -> (x+1, y)
                       West  -> (x, y-1)
+      -- the content of the temporary position, the position should not be updated in the case, it should only look at the next position.
       let maybeContent = Map.lookup tempPos space
-      let altlist = Map.fromList $ map (\(Alt pat cmds) -> (pat, cmds)) alts
+      -- inserts the commands of all the patterns in a map, so it can easily look them up
+      let altlist = Map.fromList $ map (\(Alt pat cmds) -> (pat, cmds)) alts :: Altsmap
       let pat = case maybeContent of
                   Just content -> case content of
                                     Interpreter.Empty -> Model.Empty
@@ -187,36 +214,44 @@ step env arrowState@(ArrowState space position@(x, y) heading stack) =
                                     Interpreter.Asteroid -> Model.Asteroid
                                     Interpreter.Debris -> Model.Debris
                                     Interpreter.Boundary -> Model.Boundary
-
+                  -- if the content of the doesn't much anything, it is out of bounds. So a boundary
                   Nothing -> Model.Boundary
+      -- looksup the commands from a pattern
       let maybeCmds = Map.lookup pat altlist
+      -- if that pattern is not in the "case", we hope there is an underscore, if there isn't an underscore, underScoreCmds is Nothing and the program fails
       let underScoreCmds = case maybeCmds of
                 Nothing -> Map.lookup Model.Underscore altlist
                 _ -> maybeCmds
       case underScoreCmds of
+                -- if there are commands: it adds the commands to the stack
                 Just cmds -> Ok updatedState { stack = cmds ++ updatedStack}
                 Nothing -> Fail "Non-exhaustive patterns in match"
 
+    -- deletes the ident from the stack, replaces it with all the commands of that ident
     identStep :: String -> Step
     identStep variable = do
       let ArrowState _ _ _ updatedStack = updatedState
       let maybeCommands = Map.lookup variable env
       case maybeCommands of
         Just commands -> Ok updatedState { stack = commands ++ updatedStack }
+        -- if the variable isn't found, the program fails.
         Nothing -> Fail ""
     
+    -- the heading gets updated, thats where the enum is for.
+    -- to left is counter clockwise: South -> East, 2 -> 1, (2+3) = 5 % 4 = 1
+    -- to right is clockwise: South -> West, 2 -> 3, (2+1) = 3 % 4 = 3
     updateHeading :: Dir -> Heading
     updateHeading dir = case dir of
                           Model.Left  -> toEnum $ (fromEnum heading + 3) `mod` 4
                           Model.Right -> toEnum $ (fromEnum heading + 1) `mod` 4
                           Model.Front -> heading
 
-
+-- returns nothing if there isn't an element anymore.
 safeHead :: [a] -> Maybe a
 safeHead []     = Nothing
 safeHead (a:as) = Just a
 
-
+-- if there isn't a tail anymore it just gives back an empty list
 safeTail :: [a] -> [a]
-safeTail [] =[]
+safeTail [] = []
 safeTail (x:xs) = xs
