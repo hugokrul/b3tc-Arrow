@@ -12,15 +12,16 @@ import Data.Maybe
 import qualified Data.Map as Map
 import System.Exit
 
-safeHead :: [Cmd] -> String
-safeHead []     = ""
-safeHead (a:as) = show a
+getFirstCommand :: [Cmd] -> String
+getFirstCommand []     = ""
+getFirstCommand (a:as) = show a
 
 -- Exercise 11
+-- Interactive environment for going through an arrow file
 interactive :: Environment -> ArrowState -> IO ()
 interactive env state = do
-  -- step aanroepen op env en arrowstate
   let newStep = step env state
+  -- When done or fail, stops the program, if Ok, prints the next step and executes it
   case newStep of
     Done space position heading               -> do
                                                   putStrLn "Done!"
@@ -30,7 +31,7 @@ interactive env state = do
                                                   exitSuccess
 
     Ok s@(ArrowState space position heading stack)  -> do 
-                                                  let result = Main.safeHead stack
+                                                  let result = getFirstCommand stack
                                                   if result /= "" then do
                                                     putStrLn result
                                                     print position
@@ -48,6 +49,7 @@ interactive env state = do
                                                   print error
                                                   die error
 
+-- Uses the stepRecurse function and returns the outputs
 batch :: Environment -> ArrowState -> (Space, Pos, Heading)
 batch env state@(ArrowState sp p h s) = do 
   let result = stepRecurse env $ step env state
@@ -55,48 +57,32 @@ batch env state@(ArrowState sp p h s) = do
     Done space pos heading -> (space, pos, heading)
     _ -> (sp, p, h)
 
+-- Recurses the step function while an Ok output is given
 stepRecurse :: Environment -> Step -> Step
 stepRecurse env currStep = case currStep of
                          Ok arrowState -> stepRecurse env $ step env arrowState
                          _ -> currStep
 
--- This function is just here to play around with and test your lexer/parser.
--- When implementing exercise 11, delete this comment and this function,
--- and write a new main function.
-main :: IO()
+-- Main program loop
+main :: IO ()
 main = do
-  mainArrow
-
-mainSpace :: IO()
-mainSpace = do
-  chars <- readFile "examples/EmptySpace.space"
-  let space = Map.fromList [((x, y), Interpreter.Debris) | x <- [0 .. 7], y <- [0 .. 7]] :: Space
-  putStrLn $ printSpace space
-
--- TODO: eindigen zonder punt mag, moet opgelost worden
-
-mainArrow :: IO ()
-mainArrow = do
-  -- arrow <- readFile "examples/Test.arrow"
-  -- spaceChars <- readFile "examples/EmptySpace.space"
-  putStrLn "enter the .arrow file"
+  putStrLn "Enter the .arrow file (Ex: examples/Test.arrow)"
   arrowString <- getLine
   arrow <- readFile arrowString
 
-  putStrLn "enter the .space file"
+  putStrLn "Enter the .space file (Ex: examples/EmptySpace.space)"
   spaceString <- getLine
   spaceChars <- readFile spaceString
-  -- spaceChars <- readFile "examples/EmptySpace.space"
 
-  putStrLn "enter the x position"
+  putStrLn "Enter the x position"
   x <- getLine
 
-  putStrLn "enter the y position"
+  putStrLn "Enter the y position"
   y <- getLine
 
   putStrLn ""
 
-  putStrLn "enter North, East, South, West"
+  putStrLn "Enter North, East, South, West for a starting facing"
   heading <- getLine
   
   let space = stringToSpace spaceChars :: Space
