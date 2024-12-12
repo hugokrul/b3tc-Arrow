@@ -8,8 +8,8 @@ import Data.Char (isSpace)
 import Control.Monad (replicateM, join)
 import Debug.Trace
 import Data.List.Split
+import Data.List
 import Data.Maybe
-
 import Lexer
 import Parser
 import Model
@@ -89,16 +89,19 @@ printChunks (x:xs) = printChunk x ++ printChunks xs
 -- These three should be defined by you
 type Ident = String -- is always Ident String
 type Commands = [Cmd]
-type Heading = ()
+data Heading = North | East | South | West
+  deriving (Eq, Ord, Show, Enum)
 
 type Environment = Map Ident Commands
 
 type Stack       =  Commands
-data ArrowState  =  ArrowState Space Pos Heading Stack
+data ArrowState  =  ArrowState {space :: Space, pos :: Pos, heading :: Heading, stack :: Stack}
+  deriving Show
 
 data Step =  Done  Space Pos Heading
           |  Ok    ArrowState
           |  Fail  String
+  deriving Show
 
 -- | Exercise 8
 toEnvironment :: String -> Environment
@@ -115,8 +118,104 @@ makeEnvironment (Program rules) = makeEnvironment' rules
     makeEnvironment' [] env = Map.empty
     makeEnvironment' ((Rule name cmds):xs) env = Map.insert name cmds (makeEnvironment' xs env)
 
+{-
+-- edge == boundary
+
+1. stack laden -> L.lookup "start"
+2. popt de eerste uit de stack
+3. kijk wat voor command dat is
+check   GO -> if space[position] == empty | lambda | debry then position + heading else position --> Ok (ArrowState Space Pos Heading (tail stack))
+        TAKE -> space[position] == lambda || debris = space[position] = empty
+        MARK -> space[position] = lambda
+        Nothing -> nothing
+        TURN -> c# code above
+        CASE caseDir alts -> tempHeading = tempTurn caseDir for (int i = 0; i < alts.length; i++) if space[position+tempHeading] == alts[i] then stack.push alts[i].cmds else opnieuw met i
+        ident -> delete ident from stack, prepent the commands from that ident (Map.lookup)
+        [] -> Done Space Pos Heading
+        _ -> fail "execution failed"
+-}
+
+loadStack :: Environment -> Stack
+loadStack env = fromMaybe [] (Map.lookup "start" env)
+
 -- | Exercise 9
 step :: Environment -> ArrowState -> Step
-step = undefined
+step env arrowState@(ArrowState space position@(x, y) heading stack) =
+  case currentCommand of
+    Just x -> stepCommand x
+    Nothing -> Done space position heading
+
+  where
+    currentCommand = safeHead stack
+    updatedState = arrowState {stack = safeTail stack}
+
+    stepCommand :: Cmd -> Step
+    stepCommand x = 
+      case x of
+        Go             -> Ok updatedState { pos = goStep }
+        Take           -> Ok updatedState { space = takeStep }
+        Mark           -> Ok updatedState { space = markStep }
+        CmdNothing     -> Ok updatedState
+        Turn dir       -> Ok updatedState { heading = updateHeading dir }
+        Case dir alts  -> caseStep dir alts
+        Ident variable -> identStep variable
+        _              -> Fail "Failed execution"
 
 
+    goStep :: Pos
+    goStep = do
+      let nextPosition = case heading of
+                North -> (x-1, y)
+                East  -> (x, y+1)
+                South -> (x+1, y)
+                West  -> (x, y-1)
+      let nextSpaceItem = Map.lookup nextPosition space
+      case nextSpaceItem of
+        Just content -> case content of
+                          Interpreter.Asteroid -> position
+                          Interpreter.Boundary -> position
+                          _ -> nextPosition
+        Nothing -> position
+
+    takeStep :: Space
+    takeStep = do
+      let maybeContents = Map.lookup position space
+      case maybeContents of
+        Just contents -> case contents of
+                          Interpreter.Lambda -> Map.adjust (const Interpreter.Empty) position space
+                          Interpreter.Debris -> Map.adjust (const Interpreter.Empty) position space
+                          _ -> space
+        Nothing -> space
+    
+    markStep :: Space
+    markStep = Map.adjust (const Interpreter.Lambda) position space
+
+    -- todo
+    caseStep :: Dir -> Alts -> Step
+    caseStep dir alts = do
+      let tempHeading = undefined
+      Ok arrowState
+    
+    identStep :: String -> Step
+    identStep variable = do
+      let ArrowState _ _ _ updatedStack = updatedState
+      let maybeCommands = Map.lookup variable env
+      case maybeCommands of
+        Just commands -> Ok updatedState { stack = commands ++ updatedStack }
+        Nothing -> Fail ""
+    
+    updateHeading :: Dir -> Heading
+    updateHeading dir = case dir of
+                          Model.Left  -> toEnum $ (fromEnum heading + 3) `mod` 4
+                          Model.Right -> toEnum $ (fromEnum heading + 1) `mod` 4
+                          Model.Front -> heading
+
+
+safeHead :: [a] -> Maybe a
+safeHead []     = Nothing
+safeHead (a:as) = Just a
+
+
+safeTail :: [a] -> [a]
+safeTail [] =[]
+safeTail (x:xs) = xs

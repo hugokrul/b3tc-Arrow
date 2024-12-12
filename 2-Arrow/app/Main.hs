@@ -7,7 +7,9 @@ import Model
 import Interpreter
 import Lexer
 import Parser
-import qualified Data.Map as L
+
+import Data.Maybe
+import qualified Data.Map as Map
 
 -- Exercise 11
 interactive :: Environment -> ArrowState -> IO ()
@@ -26,11 +28,28 @@ main = do
 mainSpace :: IO()
 mainSpace = do
   chars <- readFile "examples/EmptySpace.space"
-  let test = L.fromList [((x, y), Interpreter.Debris) | x <- [0 .. 7], y <- [0 .. 7]] :: Space
-  putStrLn $ printSpace test
+  let space = Map.fromList [((x, y), Interpreter.Debris) | x <- [0 .. 7], y <- [0 .. 7]] :: Space
+  putStrLn $ printSpace space
+
+-- TODO: eindigen zonder punt mag, moet opgelost worden
 
 mainArrow :: IO ()
 mainArrow = do
   chars <- readFile "examples/Add.arrow"
+  spaceChars <- readFile "examples/Maze.space"
+  let space = stringToSpace spaceChars :: Space
   let env = toEnvironment chars
-  print env
+  let stack = loadStack env
+  let arrowState = ArrowState space (0, 0) South stack
+  -- let Ok nogEenKeer = step env arrowState
+  -- let Ok oneMoreTime = step env nogEenKeer
+  -- let Done space pos heading = step env oneMoreTime
+  let Done space pos heading = stepRecurse env $ step env arrowState
+  print pos
+  print heading
+  putStrLn $ printSpace space
+
+stepRecurse :: Environment -> Step -> Step
+stepRecurse env currStep = case currStep of
+                         Ok arrowState -> stepRecurse env $ step env arrowState
+                         _ -> currStep
