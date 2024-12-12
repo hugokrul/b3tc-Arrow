@@ -75,7 +75,7 @@ printSpace input = do
   let width = fst (fst (Map.findMax input))
   let height = snd (fst (Map.findMax input))
   -- splits the input with a give width
-  let chunks = chunksOf (width + 1) $ Map.elems input
+  let chunks = chunksOf (height + 1) $ Map.elems input
   "(" ++ show width ++ ", " ++ show height ++ ")" ++ "\n" ++ printChunks chunks
 
 printChunks :: [[Contents]] -> String
@@ -188,15 +188,32 @@ step env arrowState@(ArrowState space position@(x, y) heading stack) =
     -- todo
     caseStep :: Dir -> Alts -> Step
     caseStep dir alts = do
+      let ArrowState _ _ _ updatedStack = updatedState
       let tempHeading = updateHeading dir
-      let tempPos = goStep tempHeading
+      let tempPos = case tempHeading of
+                      North -> (x-1, y)
+                      East  -> (x, y+1)
+                      South -> (x+1, y)
+                      West  -> (x, y-1)
       let maybeContent = Map.lookup tempPos space
-      let altlist = Map.fromList $ map (const . uncurry Alt) alts
+      let altlist = Map.fromList $ map (\(Alt pat cmds) -> (pat, cmds)) alts
       let pat = case maybeContent of
-                  Just content -> Fail "no case."
+                  Just content -> case content of
+                                    Interpreter.Empty -> Model.Empty
+                                    Interpreter.Lambda -> Model.Lambda
+                                    Interpreter.Asteroid -> Model.Asteroid
+                                    Interpreter.Debris -> Model.Debris
+                                    Interpreter.Boundary -> Model.Boundary
 
-                  Nothing -> Fail "no case."
-      Ok arrowState
+                  Nothing -> Model.Boundary
+      let maybeCmds = Map.lookup pat altlist
+      let underScoreCmds = case maybeCmds of
+                Nothing -> Map.lookup Model.Underscore altlist
+                _ -> maybeCmds
+      case underScoreCmds of
+                Just cmds -> Ok updatedState { stack = cmds ++ updatedStack}
+                Nothing -> Fail "Non-exhaustive patterns in match"
+
     identStep :: String -> Step
     identStep variable = do
       let ArrowState _ _ _ updatedStack = updatedState

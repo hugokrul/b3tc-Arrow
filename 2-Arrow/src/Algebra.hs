@@ -62,10 +62,10 @@ defaultAlgebra in1 in2 in3 in4 in5 in6 = Algebra
     }
 
 -- counts all rules, if the rule has the name: start: it adds one up
-startAlgebra :: Algebra Bool Int Int Int Int Int
-startAlgebra = (defaultAlgebra 0 0 0 0 0 0)  {
-                                programAlg = ProgramAlgebra (\rule -> sum rule == 1),
-                                rulesAlg = RuleAlgebra (\name _ -> if name == "start" then 1 else 0)
+startAlgebra :: Algebra Bool Bool () () () ()
+startAlgebra = (defaultAlgebra False False () () () ())  {
+                                programAlg = ProgramAlgebra or,
+                                rulesAlg = RuleAlgebra (\name _ -> name == "start")
                             }
 
 -- checks if the original list of names is equal to the list of names if you remove the duplicates
