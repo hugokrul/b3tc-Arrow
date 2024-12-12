@@ -1,7 +1,1 @@
-start       -> go, go, return.
-
-return      -> case front of
-                 Boundary  ->  nothing;
-                 Empty     ->  turn left, return;
-                 _         ->  take, go, return
-               end.
+start       -> go.

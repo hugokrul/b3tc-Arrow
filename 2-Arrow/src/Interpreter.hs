@@ -91,7 +91,7 @@ type Ident = String -- is always Ident String
 type Commands = [Cmd]
 type Altsmap = Map Pat Commands
 data Heading = North | East | South | West
-  deriving (Eq, Ord, Show, Enum)
+  deriving (Eq, Ord, Show, Enum, Read)
 
 type Environment = Map Ident Commands
 
@@ -112,23 +112,6 @@ toEnvironment input = do
   if checkProgram program then makeEnvironment program else Map.empty
     where
       makeEnvironment = Map.fromList . map (\(Rule name cmds) -> (name, cmds)) . rules -- rules :: Program -> [Rule]
-
-{-
--- edge == boundary
-
-1. stack laden -> L.lookup "start"
-2. popt de eerste uit de stack
-3. kijk wat voor command dat is
-check   GO -> if space[position] == empty | lambda | debry then position + heading else position --> Ok (ArrowState Space Pos Heading (tail stack))
-        TAKE -> space[position] == lambda || debris = space[position] = empty
-        MARK -> space[position] = lambda
-        Nothing -> nothing
-        TURN -> c# code above
-        CASE caseDir alts -> tempHeading = tempTurn caseDir for (int i = 0; i < alts.length; i++) if space[position+tempHeading] == alts[i] then stack.push alts[i].cmds else opnieuw met i
-        ident -> delete ident from stack, prepent the commands from that ident (Map.lookup)
-        [] -> Done Space Pos Heading
-        _ -> fail "execution failed"
--}
 
 loadStack :: Environment -> Stack
 loadStack env = fromMaybe [] (Map.lookup "start" env)
@@ -237,6 +220,3 @@ safeHead (a:as) = Just a
 safeTail :: [a] -> [a]
 safeTail [] =[]
 safeTail (x:xs) = xs
-
--- ja :: (a -> b -> c) -> c -> (a, b)
-ja = uncurry

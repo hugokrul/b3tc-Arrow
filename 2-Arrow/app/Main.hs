@@ -77,15 +77,16 @@ mainSpace = do
 
 mainArrow :: IO ()
 mainArrow = do
-  
+  -- arrow <- readFile "examples/Test.arrow"
+  -- spaceChars <- readFile "examples/EmptySpace.space"
   putStrLn "enter the .arrow file"
   arrowString <- getLine
   arrow <- readFile arrowString
 
   putStrLn "enter the .space file"
   spaceString <- getLine
-  space <- readFile spaceString
-  spaceChars <- readFile "examples/EmptySpace.space"
+  spaceChars <- readFile spaceString
+  -- spaceChars <- readFile "examples/EmptySpace.space"
 
   putStrLn "enter the x position"
   x <- getLine
@@ -95,13 +96,20 @@ mainArrow = do
 
   putStrLn ""
 
-  putStrLn "enter 1 for north, 2 for east, 3 for south, 4 for east"
+  putStrLn "enter North, East, South, West"
   heading <- getLine
-
-
+  
   let space = stringToSpace spaceChars :: Space
   let env = toEnvironment arrow
   let stack = loadStack env
-  let arrowState = ArrowState space (read x, read y) (toEnum (read heading)) stack
+  let arrowState = ArrowState space (read y, read x) (read heading) stack
 
-  interactive env arrowState
+  putStrLn "Enter the execution way: Batch or Interactive"
+  executionWay <- getLine
+  case executionWay of
+    "Batch" -> do 
+      let (space, pos, heading) = batch env arrowState
+      print pos
+      print heading
+      putStrLn $ printSpace space
+    "Interactive" -> interactive env arrowState
