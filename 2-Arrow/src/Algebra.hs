@@ -168,7 +168,8 @@ fold (
         foldPat Boundary = patBoundary patAlg
         foldPat Underscore = patUnderscore patAlg
 
--- Exercise 6
+-- Exercise
+-- Defines each different test and outputs the 'and'ed tests
 checkProgram :: Program -> Bool
 checkProgram program = do
     -- check if the program has only 1 start command
