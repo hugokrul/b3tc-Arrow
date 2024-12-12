@@ -89,6 +89,7 @@ printChunks (x:xs) = printChunk x ++ printChunks xs
 -- These three should be defined by you
 type Ident = String -- is always Ident String
 type Commands = [Cmd]
+type Altsmap = Map Pat Commands
 data Heading = North | East | South | West
   deriving (Eq, Ord, Show, Enum)
 
@@ -108,15 +109,9 @@ toEnvironment :: String -> Environment
 toEnvironment input = do
   let tokens = alexScanTokens input
   let program = Program (parser tokens) :: Program
-  if checkProgram program then makeEnvironment program Map.empty else Map.empty
-
-makeEnvironment :: Program -> Environment -> Environment
-makeEnvironment (Program rules) = makeEnvironment' rules
-  where
-    -- TODO: insert not alphabetically
-    makeEnvironment' :: [Rule] -> Environment -> Environment
-    makeEnvironment' [] env = Map.empty
-    makeEnvironment' ((Rule name cmds):xs) env = Map.insert name cmds (makeEnvironment' xs env)
+  if checkProgram program then makeEnvironment program else Map.empty
+    where
+      makeEnvironment = Map.fromList . map (\(Rule name cmds) -> (name, cmds)) . rules -- rules :: Program -> [Rule]
 
 {-
 -- edge == boundary
@@ -196,6 +191,7 @@ step env arrowState@(ArrowState space position@(x, y) heading stack) =
       let tempHeading = updateHeading dir
       let tempPos = goStep tempHeading
       let maybeContent = Map.lookup tempPos space
+      let altlist = Map.fromList $ map (const . uncurry Alt) alts
       let pat = case maybeContent of
                   Just content -> Fail "no case."
 
@@ -224,3 +220,6 @@ safeHead (a:as) = Just a
 safeTail :: [a] -> [a]
 safeTail [] =[]
 safeTail (x:xs) = xs
+
+-- ja :: (a -> b -> c) -> c -> (a, b)
+ja = uncurry
