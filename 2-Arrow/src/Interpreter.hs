@@ -152,7 +152,7 @@ step env arrowState@(ArrowState space position@(x, y) heading stack) =
     stepCommand :: Cmd -> Step
     stepCommand x = 
       case x of
-        Go             -> Ok updatedState { pos = goStep }
+        Go             -> Ok updatedState { pos = goStep heading}
         Take           -> Ok updatedState { space = takeStep }
         Mark           -> Ok updatedState { space = markStep }
         CmdNothing     -> Ok updatedState
@@ -162,8 +162,8 @@ step env arrowState@(ArrowState space position@(x, y) heading stack) =
         _              -> Fail "Failed execution"
 
 
-    goStep :: Pos
-    goStep = do
+    goStep :: Heading -> Pos
+    goStep heading = do
       let nextPosition = case heading of
                 North -> (x-1, y)
                 East  -> (x, y+1)
@@ -193,9 +193,14 @@ step env arrowState@(ArrowState space position@(x, y) heading stack) =
     -- todo
     caseStep :: Dir -> Alts -> Step
     caseStep dir alts = do
-      let tempHeading = undefined
+      let tempHeading = updateHeading dir
+      let tempPos = goStep tempHeading
+      let maybeContent = Map.lookup tempPos space
+      let pat = case maybeContent of
+                  Just content -> Fail "no case."
+
+                  Nothing -> Fail "no case."
       Ok arrowState
-    
     identStep :: String -> Step
     identStep variable = do
       let ArrowState _ _ _ updatedStack = updatedState

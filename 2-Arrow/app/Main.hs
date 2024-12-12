@@ -48,6 +48,7 @@ mainArrow = do
   print pos
   print heading
   putStrLn $ printSpace space
+  -- print env
 
 stepRecurse :: Environment -> Step -> Step
 stepRecurse env currStep = case currStep of
