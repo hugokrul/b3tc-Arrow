@@ -61,7 +61,8 @@ defaultAlgebra in1 in2 in3 in4 in5 in6 = Algebra
       patAlg      = PatAlgebra in6 in6 in6 in6 in6 in6
     }
 
--- counts all rules, if the rule has the name: start: it adds one up
+-- checks all rules for the name: 'start', when found, the flag will be true
+-- higher up, an 'or' is used for checking if there is at least one start rule
 startAlgebra :: Algebra Bool Bool () () () ()
 startAlgebra = (defaultAlgebra False False () () () ())  {
                                 programAlg = ProgramAlgebra or,
@@ -75,16 +76,18 @@ duplicateAlgebra = (defaultAlgebra True [] () () () ()) {
                                 rulesAlg = RuleAlgebra (\name _ -> [name])
                             }
 
--- a list of all the names of all the rules
+-- list of names of all defined rules 
 ruleNameAlgebra :: Algebra [String] String () () () ()
 ruleNameAlgebra = (defaultAlgebra [] "" () () () ()) {
                                 programAlg = ProgramAlgebra id,
                                 rulesAlg = RuleAlgebra const
                             }
 
--- a list of them names of all the Variable rule calls
+-- list of names of all called ruled
 identNameAlgebra :: Algebra [String] [String] [String] () [String] ()
 identNameAlgebra = (defaultAlgebra [] [] [] () [] ())
+                            -- concats the string lists of the cmdIdents (the variable calls) 
+                            -- from normal commands or commands from the alt way
                             {   programAlg  = ProgramAlgebra concat,
                                 rulesAlg    = RuleAlgebra (\_ cmds -> concat cmds),
                                 commandsAlg = CmdAlgebra

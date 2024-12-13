@@ -87,7 +87,6 @@ printChunks (x:xs) = printChunk x ++ printChunks xs
 -- These three should be defined by you
 type Ident = String -- is always Ident String
 type Commands = [Cmd]
-type Altsmap = Map Pat Commands -- a way to lookup the patterns with the given commands
 data Heading = North | East | South | West
   deriving (Eq, Ord, Show, Enum, Read)
 
@@ -100,7 +99,7 @@ data ArrowState  =  ArrowState {space :: Space, pos :: Pos, heading :: Heading, 
   deriving Show
 
 data Step =  Done  Space Pos Heading
-          |  Ok    ArrowState
+          |  Ok    {arrowState :: ArrowState}
           |  Fail  String
   deriving Show
 
@@ -206,7 +205,7 @@ step env arrowState@(ArrowState space position@(x, y) heading stack) =
       -- the content of the temporary position, the position should not be updated in the case, it should only look at the next position.
       let maybeContent = Map.lookup tempPos space
       -- inserts the commands of all the patterns in a map, so it can easily look them up
-      let altlist = Map.fromList $ map (\(Alt pat cmds) -> (pat, cmds)) alts :: Altsmap
+      let altlist = Map.fromList $ map (\(Alt pat cmds) -> (pat, cmds)) alts :: Map Pat Commands
       let pat = case maybeContent of
                   Just content -> case content of
                                     Interpreter.Empty -> Model.Empty

@@ -12,9 +12,6 @@ import Data.Maybe
 import qualified Data.Map as Map
 import System.Exit
 
-getFirstCommand :: [Cmd] -> String
-getFirstCommand []     = ""
-getFirstCommand (a:as) = show a
 
 -- Exercise 11
 -- Interactive environment for going through an arrow file
@@ -45,6 +42,12 @@ interactive env state = do
                                                     else die "program stopped"
                                                   else interactive env s
 
+      where
+        -- Converts first command from the stack to a human readable string
+        getFirstCommand :: [Cmd] -> String
+        getFirstCommand []     = ""
+        getFirstCommand (a:as) = show a
+        
     Fail error                                -> do
                                                   print error
                                                   die error
@@ -59,9 +62,8 @@ batch env state@(ArrowState sp p h s) = do
 
 -- Recurses the step function while an Ok output is given
 stepRecurse :: Environment -> Step -> Step
-stepRecurse env currStep = case currStep of
-                         Ok arrowState -> stepRecurse env $ step env arrowState
-                         _ -> currStep
+stepRecurse env (Ok arrowState) = stepRecurse env $ step env arrowState
+stepRecurse env currStep = currStep
 
 -- Main program loop
 main :: IO ()
