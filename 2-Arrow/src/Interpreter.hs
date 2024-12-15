@@ -123,7 +123,7 @@ loadStack env = fromMaybe [] (Map.lookup "start" env)
 -- | Exercise 9
 step :: Environment -> ArrowState -> Step
 -- gets an environment and arrowstate and executes one command from the stack
-step env arrowState@(ArrowState space position@(x, y) heading stack) =
+step env arrowState@(ArrowState space position@(y, x) heading stack) =
   case maybeCommand of
     Just currentCommand -> stepCommand currentCommand
     -- if the list is empty, the program must be done
@@ -161,10 +161,10 @@ step env arrowState@(ArrowState space position@(x, y) heading stack) =
     goStep :: Heading -> Pos
     goStep heading = do
       let nextPosition = case heading of
-                North -> (x-1, y)
-                East  -> (x, y+1)
-                South -> (x+1, y)
-                West  -> (x, y-1)
+                North -> (y-1, x)
+                East  -> (y, x+1)
+                South -> (y+1, x)
+                West  -> (y, x-1)
       let nextSpaceItem = Map.lookup nextPosition space
       case nextSpaceItem of
         Just content -> case content of
