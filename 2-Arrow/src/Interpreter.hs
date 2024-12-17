@@ -198,10 +198,10 @@ step env arrowState@(ArrowState space position@(y, x) heading stack) =
       let tempHeading = updateHeading dir
       -- first checks the new position in which the case want to check for patterns
       let tempPos = case tempHeading of
-                      North -> (x-1, y)
-                      East  -> (x, y+1)
-                      South -> (x+1, y)
-                      West  -> (x, y-1)
+                      North -> (y-1, x)
+                      East  -> (y, x+1)
+                      South -> (y+1, x)
+                      West  -> (y, x-1)
       -- the content of the temporary position, the position should not be updated in the case, it should only look at the next position.
       let maybeContent = Map.lookup tempPos space
       -- inserts the commands of all the patterns in a map, so it can easily look them up
