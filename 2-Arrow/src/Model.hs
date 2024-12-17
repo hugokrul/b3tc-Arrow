@@ -46,12 +46,29 @@ data Cmd = Go | Take | Mark | CmdNothing | CmdEmpty
          | Turn Dir
          | Case { caseDir :: Dir, caseAlts :: Alts }
          | Ident { identName :: String }
-    deriving (Show, Eq, Ord)
-        
+    deriving (Eq, Ord)
+
+instance Show Cmd where
+    show Go = "Go"
+    show Take = "Take"
+    show Mark = "Mark"
+    show CmdNothing = "Nothing"
+    show CmdEmpty = "Empty"
+    show (Turn dir) = "Turn " ++ show dir
+    show (Case dir alts) = "Case " ++ show dir ++ " of\n" ++ printAlts alts
+    show (Ident name) = name ++ "()"
+
 type Alts = [Alt]
 
+printAlts :: [Alt] -> String
+printAlts [] = ""
+printAlts (x:xs) = "   " ++ show x ++ "\n" ++ printAlts xs
+
 data Alt = Alt { pat :: Pat, altCmds :: Cmds }
-    deriving (Show, Eq, Ord)
+    deriving (Eq, Ord)
+
+instance Show Alt where
+    show (Alt pattern commands) = show pattern ++ " -> " ++ show commands
 
 data Pat = Empty | Lambda | Debris | Asteroid | Boundary | Underscore
     deriving (Show, Eq, Ord)
